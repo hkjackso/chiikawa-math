@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
 <meta charset="UTF-8">
-<title>Chiikawa 數學闖關—難度自選</title>
+<title>水水和Chiikawa 一起數學闖關、迎難而上</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Mulish:wght@700&display=swap');
@@ -12,41 +12,43 @@ body{margin:0;font-family:'Mulish',sans-serif;background:linear-gradient(135deg,
 .c1{width:120px;height:45px;top:15%;left:-150px}.c1::before{width:60px;height:60px;top:-30px;left:15px}.c1::after{width:80px;height:50px;top:-20px;right:10px}
 @keyframes float{to{left:110%}}
 .panel{background:#fff;border-radius:30px;padding:25px 35px 35px;margin-top:20px;box-shadow:0 15px 35px rgba(0,0,0,.1);width:90%;max-width:580px;text-align:center;position:relative;z-index:5}
-h1{color:#ff5e9a;margin:0 0 10px;font-size:28px;letter-spacing:1px}
+h1{color:#ff5e9a;margin:0 0 10px;font-size:26px;letter-spacing:1px}
 #question{font-size:26px;margin:18px 0}#answer{padding:10px 15px;font-size:24px;width:160px;border:3px solid #ffb7d5;border-radius:15px;text-align:center;outline:none}
 .btn{cursor:pointer;background:#ff85a2;color:#fff;border:none;padding:12px 26px;font-size:20px;border-radius:20px;margin:10px 5px;transition:.3s}
 .btn:hover{animation:shake .4s}@keyframes shake{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
-/* 大图闪现 */
 .bigChiikawa{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.8);z-index:99;animation:bigPop 2s forwards}
 @keyframes bigPop{0%{transform:translate(-50%,-50%) scale(0)}50%{transform:translate(-50%,-50%) scale(1.8)}100%{transform:translate(-50%,-50%) scale(1.8);opacity:0}}
-/* 飞口袋 */
 .flyPocket{position:fixed;width:100px;animation:fly .9s forwards;z-index:98;pointer-events:none}
 @keyframes fly{0%{transform:scale(1.2) translate(0,0)}100%{transform:scale(.5) translate(calc(100vw - 60px),calc(100vh - 60px))}}
-/* 口袋 */
 #pocket{position:fixed;bottom:15px;right:15px;background:#fff;border:3px dashed #ff85a2;border-radius:25px;width:130px;min-height:130px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;padding:8px;box-shadow:0 5px 15px rgba(0,0,0,.1)}
 #pocket::before{content:'我的口袋';position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#ff85a2;color:#fff;padding:2px 12px;border-radius:12px;font-size:14px}
 .pocket-chii{width:32px;height:32px;margin:3px;border-radius:8px;object-fit:cover}
-/* 计时条 */
 #timer-bar{margin-top:12px;height:12px;background:#ffe6f0;border-radius:6px;overflow:hidden}#timer-fill{height:100%;background:#48c774;width:100%;transition:width 1s linear}
-/* 难度选择 */
 #levelSelect{margin:15px 0}#levelSelect label{font-size:18px;color:#555}#levelSelect input{width:50px;font-size:20px;text-align:center;border:2px solid #ffb7d5;border-radius:8px;margin-left:8px}
+#musicCtrl{position:fixed;top:10px;right:10px;z-index:100;background:#fff;border:2px solid #ff85a2;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px}
 </style>
 </head>
 <body>
-<!-- 飘云 -->
+<!-- 飄雲 -->
 <div class="cloud c1"></div>
 <div class="cloud c1" style="top:60%;animation-duration:32s;transform:scale(.8)"></div>
 
-<div class="panel">
-  <h1>Chiikawa 數學闖關</h1>
+<!-- 背景音樂 -->
+<audio id="bgm" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/02/07/audio_2c09d6a98c.mp3?filename=lofi-hip-hop-15s-9650.mp3" type="audio/mpeg">
+</audio>
+<div id="musicCtrl" onclick="toggleMusic()">🎵</div>
 
-  <!-- 难度选择 -->
+<div class="panel">
+  <h1>水水和Chiikawa 一起數學闖關、迎難而上</h1>
+
+  <!-- 難度選擇 -->
   <div id="levelSelect">
     <label>選擇難度 (1-10)：<input id="diffInput" type="number" min="1" max="10" value="3"></label>
     <button class="btn" onclick="startGame()">開始冒險</button>
   </div>
 
-  <!-- 题目区 -->
+  <!-- 題目區 -->
   <div id="quizArea" style="display:none">
     <div id="timer-bar"><div id="timer-fill"></div></div>
     <div id="question"></div>
@@ -54,7 +56,7 @@ h1{color:#ff5e9a;margin:0 0 10px;font-size:28px;letter-spacing:1px}
     <br><button class="btn" onclick="submitAns()">提交</button>
   </div>
 
-  <!-- 结果区 -->
+  <!-- 結果區 -->
   <div id="resultArea" style="display:none">
     <p id="resultTxt"></p>
     <button class="btn" onclick="location.reload()">再玩一次</button>
@@ -67,24 +69,25 @@ h1{color:#ff5e9a;margin:0 0 10px;font-size:28px;letter-spacing:1px}
 <script>
 const IMG_PRE = 'Chiikawa';   // 圖片前綴
 const IMG_EXT = '.png';       // 副檔名
-const IMG_COUNT = 20;         // 1~20 張
-
+const IMG_COUNT = 40;         // 1~40 張
 let diff = 3;                 // 難度
 let qBank = [], cur = 0, correct = 0, T = 0, timer = null;
+let usedImgs = new Set();     // 已獎勵圖片
 
-/* 根據難度生成題目 */
+/* 根據難度生成題目（避開太簡單的組合） */
 function makeQ(){
-  // 難度 1-2：加法 ≤50；3-4：加減 ≤100；5-6：乘法 ≤9×9；7-8：三位數加減；9-10：混和+大數
   const t = diff<=2? 1 : diff<=4? rand(2) : diff<=6? 3 : diff<=8? rand(2)+2 : rand(3)+1;
   let a, b, ans, txt;
-  const range = 30 + diff*20;   // 隨難度增加數字範圍
+  const range = 30 + diff*20;
   if(t===1){                    // 加法
-    a = rand(range); b = rand(range); ans = a+b; txt = `${a} + ${b} = ?`;
+    do{ a = rand(range); b = rand(range); }while(a+b<=5);
+    ans = a+b; txt = `${a} + ${b} = ?`;
   }else if(t===2){              // 減法(無負)
-    a = rand(range); b = rand(a);  ans = a-b; txt = `${a} − ${b} = ?`;
+    do{ a = rand(range); b = rand(a); }while(a-b<=2);
+    ans = a-b; txt = `${a} − ${b} = ?`;
   }else{                        // 乘法
-    const base = diff<=6? 9 : 12;
-    a = rand(base); b = rand(base); ans = a*b; txt = `${a} × ${b} = ?`;
+    do{ a = rand(diff<=6? 9:12); b = rand(diff<=6? 9:12); }while(a*b<=4);
+    ans = a*b; txt = `${a} × ${b} = ?`;
   }
   return {q: txt, a: ans};
 }
@@ -96,10 +99,11 @@ function startGame(){
   document.getElementById('levelSelect').style.display='none';
   document.getElementById('quizArea').style.display='block';
   document.getElementById('resultArea').style.display='none';
-  qBank = []; cur = 0; correct = 0; T = 0;
-  for(let i=0;i<20;i++) qBank.push(makeQ()); // 固定20題
+  qBank = []; cur = 0; correct = 0; T = 0; usedImgs.clear();
+  for(let i=0;i<20;i++) qBank.push(makeQ());
   showQ();
   timer = setInterval(updateBar,1000);
+  playMusic();
 }
 
 /* 更新計時條（10分鐘） */
@@ -132,9 +136,12 @@ function submitAns(){
   setTimeout(showQ,700);
 }
 
-/* 獎勵：先大圖2秒→飛口袋 */
+/* 獎勵：先大圖2秒→飛口袋，40張內不重複 */
 function rewardChiikawa(){
-  const idx = rand(IMG_COUNT);
+  if(usedImgs.size>=IMG_COUNT) return; // 全部領完
+  let idx;
+  do{ idx = rand(IMG_COUNT); }while(usedImgs.has(idx));
+  usedImgs.add(idx);
   const img = new Image();
   img.src = `${IMG_PRE}${idx}${IMG_EXT}`;
 
@@ -164,6 +171,18 @@ function endGame(){
   const rate = Math.round(correct/qBank.length*100);
   document.getElementById('resultTxt').innerHTML =
     `🎉 冒險完成！<br>你答對了 <b>${correct}</b> / ${qBank.length} 題<br>答對率 <b>${rate}%</b>`;
+}
+
+/* 背景音樂控制 */
+function playMusic(){
+  const bgm = document.getElementById('bgm');
+  bgm.volume = 0.25;
+  bgm.play().catch(()=>{});
+}
+function toggleMusic(){
+  const bgm = document.getElementById('bgm');
+  if(bgm.paused){ bgm.play(); document.getElementById('musicCtrl').textContent='🎵'; }
+  else{ bgm.pause(); document.getElementById('musicCtrl').textContent='🔇'; }
 }
 </script>
 </body>
