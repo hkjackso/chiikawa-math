@@ -45,7 +45,7 @@ h1{color:#ff5e9a;margin:0 0 10px;font-size:26px;letter-spacing:1px}
 
   <!-- 難度選擇 -->
   <div id="levelSelect">
-    <label>選擇難度 (1-10)：<input id="diffInput" type="number" min="1" max="10" value="3"></label>
+    <label>選擇難度 (1-15)：<input id="diffInput" type="number" min="1" max="15" value="5"></label>
     <button class="btn" onclick="startGame()">開始冒險</button>
   </div>
 
@@ -71,51 +71,79 @@ h1{color:#ff5e9a;margin:0 0 10px;font-size:26px;letter-spacing:1px}
 const IMG_PRE = 'Chiikawa';   // 圖片前綴
 const IMG_EXT = '.png';       // 副檔名
 const IMG_COUNT = 40;         // 1~40 張
-let diff = 3;                 // 難度
+let diff = 5;                 // 難度 (1-15)
 let qBank = [], cur = 0, correct = 0, T = 0, timer = null;
 let usedImgs = new Set();     // 已獎勵圖片
 
-/* 根據難度生成題目（避開太簡單的組合） */
+/* ---------- 1.  題目生成（含三數加減） ---------- */
 function makeQ(){
-  const t = diff<=2? 1 : diff<=4? rand(2) : diff<=6? 3 : diff<=8? rand(2)+2 : rand(3)+1;
-  let a, b, ans, txt;
-  const range = 30 + diff*20;
+  const t = diff<=2? 1 : diff<=4? rand(2) : diff<=6? rand(3) : diff<=8? rand(4) 
+            : diff<=11? rand(5)          // 舊混合-op
+            : 6;                        // lvl 12-15 → 三數加減
+  let a, b, c, ans, txt;
+  const range = 30 + diff*15;
+
   if(t===1){                    // 加法
     do{ a = rand(range); b = rand(range); }while(a+b<=5);
     ans = a+b; txt = `${a} + ${b} = ?`;
   }else if(t===2){              // 減法(無負)
     do{ a = rand(range); b = rand(a); }while(a-b<=2);
     ans = a-b; txt = `${a} − ${b} = ?`;
-  }else{                        // 乘法
-    do{ a = rand(diff<=6? 9:12); b = rand(diff<=6? 9:12); }while(a*b<=4);
+  }else if(t===3){              // 乘法
+    do{ a = rand(diff<=8? 9:12); b = rand(diff<=8? 9:12); }while(a*b<=4);
     ans = a*b; txt = `${a} × ${b} = ?`;
+  }else if(t===4){              // 除法(整除)
+    do{ b = rand(diff<=8? 5:9); ans = rand(diff<=8? 10:15); a = b*ans; }while(ans<=1);
+    txt = `${a} ÷ ${b} = ?`;
+  }else if(t===5){              // 舊混合運算
+    let op1 = rand(2), op2 = rand(2);
+    if(op1===1 && op2===1){ a=rand(20); b=rand(9); c=rand(20); ans=a+b*c; txt=`${a} + ${b} × ${c} = ?`; }
+    else if(op1===1 && op2===2){ c=rand(5)+1; b=rand(9)+1; a=rand(20); let tmp=b*c; ans=a+b; txt=`${a} + ${tmp} ÷ ${c} = ?`; }
+    else if(op1===2 && op2===1){ a=rand(9); b=rand(20); c=rand(9); ans=a*c+b; txt=`${a} × ${c} + ${b} = ?`; }
+    else{ c=rand(3)+2; b=rand(4)+2; a=b*c*(rand(5)+1); ans=a/b/c; txt=`${a} ÷ ${b} ÷ ${c} = ?`; }
+  }else{                        // t===6  三數加減  (lvl 12-15)
+    a = rand(900,100);          // 100-999
+    b = rand(99,10);            // 10-99
+    c = rand(99,10);            // 10-99
+    if(rand(2)===1){            // +b -c
+      ans = a+b-c;
+      if(ans<10) ans+=c, txt=`${a} + ${b} − ${ans-a-b+c} = ?`;
+      else       txt=`${a} + ${b} − ${c} = ?`;
+    }else{                      // -b +c
+      ans = a-b+c;
+      if(ans<10) ans+=b, txt=`${a} − ${b} + ${ans-a+b-c} = ?`;
+      else       txt=`${a} − ${b} + ${c} = ?`;
+    }
   }
   return {q: txt, a: ans};
 }
-function rand(n){return Math.floor(Math.random()*n)+1;}
 
-/* 開始遊戲 */
+/* ---------- 2.  隨機函數（可設最小值） ---------- */
+function rand(n,min){
+  if(arguments.length===1) min=1;
+  return Math.floor(Math.random()*n)+min;
+}
+
+/* ---------- 以下完全保持原檔邏輯 ---------- */
 function startGame(){
-  diff = Math.min(10,Math.max(1,parseInt(document.getElementById('diffInput').value)||3));
+  diff = Math.min(15,Math.max(1,parseInt(document.getElementById('diffInput').value)||5));
   document.getElementById('levelSelect').style.display='none';
   document.getElementById('quizArea').style.display='block';
   document.getElementById('resultArea').style.display='none';
   qBank = []; cur = 0; correct = 0; T = 0; usedImgs.clear();
-  for(let i=0;i<20;i++) qBank.push(makeQ());
+  for(let i=0;i<25;i++) qBank.push(makeQ());
   showQ();
   timer = setInterval(updateBar,1000);
   playMusic();
 }
 
-/* 更新計時條（10分鐘） */
 function updateBar(){
   T++;
-  const w = Math.max(0,600-T)/600*100;
+  const w = Math.max(0,900-T)/900*100;
   document.getElementById('timer-fill').style.width = w+'%';
-  if(T>=600) endGame();
+  if(T>=900) endGame();
 }
 
-/* 顯示題目 */
 function showQ(){
   if(cur>=qBank.length){endGame();return;}
   document.getElementById('question').textContent = `第 ${cur+1} 題　${qBank[cur].q}`;
@@ -123,7 +151,6 @@ function showQ(){
   document.getElementById('answer').focus();
 }
 
-/* 提交答案 */
 function submitAns(){
   const u = Number(document.getElementById('answer').value);
   if(Number.isNaN(u)) return alert('請輸入數字！');
@@ -137,23 +164,18 @@ function submitAns(){
   setTimeout(showQ,700);
 }
 
-/* 獎勵：先大圖2秒→飛口袋，40張內不重複 */
 function rewardChiikawa(){
-  if(usedImgs.size>=IMG_COUNT) return; // 全部領完
+  if(usedImgs.size>=IMG_COUNT) return;
   let idx;
   do{ idx = rand(IMG_COUNT); }while(usedImgs.has(idx));
   usedImgs.add(idx);
   const img = new Image();
   img.src = `${IMG_PRE}${idx}${IMG_EXT}`;
-
-  // 1. 大圖閃現
   img.className = 'bigChiikawa';
   document.body.appendChild(img);
-  // 2. 2秒後飛走
   setTimeout(()=>{
     img.classList.remove('bigChiikawa');
     img.className = 'flyPocket';
-    // 3. 飛完塞口袋
     setTimeout(()=>{
       img.remove();
       const slot = new Image();
@@ -164,7 +186,6 @@ function rewardChiikawa(){
   },2000);
 }
 
-/* 結算 */
 function endGame(){
   clearInterval(timer);
   document.getElementById('quizArea').style.display='none';
@@ -174,7 +195,6 @@ function endGame(){
     `🎉 冒險完成！<br>你答對了 <b>${correct}</b> / ${qBank.length} 題<br>答對率 <b>${rate}%</b>`;
 }
 
-/* 背景音樂控制 */
 function playMusic(){
   const bgm = document.getElementById('bgm');
   bgm.volume = 0.25;
@@ -187,5 +207,4 @@ function toggleMusic(){
 }
 </script>
 </body>
-
 </html>
